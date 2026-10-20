@@ -1,0 +1,136 @@
+<!--
+
+    Copyright (c) 2014 - 2015 Ventiv Technology
+
+    Licensed under the Apache License, Version 2.0 (the "License"); you may not
+    use this file except in compliance with the License. You may obtain a copy of
+    the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+    License for the specific language governing permissions and limitations under
+    the License.
+
+-->
+<div class="container" id="hosts-details" cg-busy="asyncExecutionPromise">
+    <div id="environment-header" data-ng-show="isMultipleTiers()">
+        <span class="environment-title" translate="ENVIRONMENT">Environment</span>: <span class="environment-description">{{environment.description}}</span>
+
+        <hr>
+    </div>
+
+    <accordion close-others="false">
+        <accordion-group data-ng-repeat="application in environment.applications" is-open="application.opened">
+            <accordion-heading>
+                <span id="{{application.id}}-app">{{application.description}}</span>
+                <span data-ng-show="application.buildStatus.building"> - <a href="" translate="BUILDING_IMAGE">Building Image...</a></span>
+                <span data-ng-show="application.deploymentInProgress"> - <a href="" translate="DEPLOYING">Deploying...</a></span>
+                <span data-ng-show="application.scheduledDeployment"> - <a href="">Deploying ({{application.scheduledDeployment.requestedVersion}}) @ {{application.scheduledDeployment.requestedDeploymentDate | date : 'short'}}</a></span>
+                <span class="pull-right">(Running: {{getRunning(application).length}}, Stopped: {{getStopped(application).length}}, Missing: {{application.missingServiceInstances.length}})</span>
+            </accordion-heading>
+            <div id="{{application.id}}-url">
+                <div class="row">
+                    <div class="col-md-2" translate="URL">URL:</div>
+                    <div class="col-md-10"><a href="{{application.url}}" target="_blank">{{application.url}}</a></div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-2" translate="DEPLOYED_BUILD">Deployed Build:</div>
+                    <div class="col-md-10">{{application.version}}</div>
+                </div>
+
+                <div data-ng-include="'/api/environment/' + environment.tierName + '/' + environment.id + '/app/' + application.id + '/extraInformation'"></div>
+
+                <hr>
+
+                <div class="row">
+                    <div class="col-md-2 col-md-offset-1" ng-if="application.branches">
+                        <select class="selected-branch" ng-model="application.selectedBranch" ng-options="o as o for o in application.branches" ng-init="application.selectedBranch = application.branches[0]"></select>
+                    </div>
+                    <div class="col-md-2" ng-class="{'col-md-offset-1': !application.branches}">
+                        <select ng-model="selectedVersion" class="version-selection form-control" data-application="application"></select>
+                    </div>
+                    <div class="col-md-2 btn-group" data-ng-show="!application.deploymentInProgress && !application.buildStatus.building && isPermissionGranted(application, 'DEPLOY') && !isDeploymentScheduled(application)">
+                        <button class="btn btn-primary" style="width: 80%" data-ng-click="deployApplication(application)" translate="DEPLOY">Deploy</button>
+                        <button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            <span class="caret"></span>
+                            <span class="sr-only">Toggle Dropdown</span>
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li style="padding-left: 20px;">Deploy In: </li>
+                            <li role="separator" class="divider"></li>
+                            <li><a data-ng-click="deployApplication(application, 5)">5 Minutes</a></li>
+                            <li><a data-ng-click="deployApplication(application, 10)">10 Minutes</a></li>
+                            <li><a data-ng-click="deployApplication(application, 15)">15 Minutes</a></li>
+                            <li><a data-ng-click="deployApplication(application, 20)">20 Minutes</a></li>
+                            <li><a data-ng-click="deployApplication(application, 30)">30 Minutes</a></li>
+                            <li><a data-ng-click="deployApplication(application, 45)">45 Minutes</a></li>
+                            <li><a data-ng-click="deployApplication(application, 60)">60 Minutes</a></li>
+                        </ul>
+                    </div>
+
+                    <div class="col-md-2" data-ng-show="isDeploymentScheduled(application)" ><button class="btn btn-danger btn-block" data-ng-click="stopScheduledDeployment(application)">Cancel Deployment</button></div>
+                    <div class="col-md-1"><button class="btn btn-warning btn-block" data-ng-show="isPermissionGranted(application, 'STOP')" data-ng-click="statusChangeApplication(application, 'stop')" translate="STOP">Stop</button></div>
+                    <div class="col-md-1"><button class="btn btn-warning btn-block" data-ng-show="isPermissionGranted(application, 'START')" data-ng-click="statusChangeApplication(application, 'start')" translate="START">Start</button></div>
+                    <div class="col-md-1"><button class="btn btn-warning btn-block" data-ng-show="isPermissionGranted(application, 'RESTART')" data-ng-click="statusChangeApplication(application, 'restart')" translate="RESTART">Restart</button></div>
+                    <div class="col-md-1"><button class="btn btn-warning btn-block" data-ng-show="isPermissionGranted(application, 'READ_USER_AUDIT')" data-ng-click="showUserAudit(application)" translate="HISTORY">History</button></div>
+                </div>
+
+                <div data-ng-show="application.buildStatus.building" id="build-info">
+                    <hr>
+
+                    <div class="row" data-ng-repeat="(buildingService, buildingServiceStatus) in application.buildStatus.serviceBuildStatus">
+                        <div class="col-md-2">{{buildingService}}:</div>
+                        <div class="col-md-10">{{buildingServiceStatus}}</div>
+                    </div>
+                </div>
+
+                <hr>
+
+                <div class="env-service-instance" data-ng-repeat="serviceInstance in application.serviceInstances">
+                    <div data-ng-class="[serviceInstanceButtonSizeClass(application)]">
+                        <div class="btn btn-block" data-ng-click="serviceInstanceDetails(serviceInstance, application)" data-ng-class="{'btn-success': serviceInstance.status == 'Running', 'btn-danger': serviceInstance.status == 'Stopped'}">
+                            <span>{{serviceInstance.serviceDescription}} on</span>
+                            <span>{{serviceInstance.serverName}}</span>
+                            <span>[{{serviceInstance.containerImage.tag}} - deployed @ {{serviceInstance.containerCreatedDate | date:'short'}} - {{serviceInstance.containerStatus}}]</span>
+                        </div>
+                    </div>
+                    <div data-ng-repeat="(metricName, metricValue) in serviceInstance.additionalMetrics" data-ng-if="serviceInstance.additionalMetrics && serviceInstance.status == 'Running' && isPermissionGranted(application, 'METRICS_OVERVIEW')" class="col-md-2">
+                        <div class="btn btn-info btn-block" data-ng-click="additionalMetricsDetails(application, serviceInstance, metricName, metricValue)" data-ng-include="'/api/service/' + serviceInstance.name + '/metrics/' + metricName + '/button'"></div>
+                    </div>
+                </div>
+
+                <hr>
+
+                <div class="env-missing-service-instance" data-ng-repeat="missingService in application.missingServiceInstances track by $index">
+                    <div data-ng-class="[serviceInstanceButtonSizeClass(application)]">
+                        <div class="btn btn-warning btn-block">{{missingService.serviceDescription}} Missing</div>
+                    </div>
+                </div>
+
+            </div>
+        </accordion-group>
+    </accordion>
+
+    <div id="workflow-processes" data-ng-if="workflowProcesses.length > 0" data-ng-cloak>
+        <div class="environment-title" translate="WORKFLOW_PROCESSES">Workflow Processes</div>
+        <hr>
+        <accordion close-others="false" close-others="'true'">
+            <accordion-group data-ng-repeat="workflowProcess in workflowProcesses" is-open="workflowProcess.isOpen" heading="{{workflowProcess.name}}">
+                <div data-ng-show="workflowProcess.processInstances.length == 0">
+                    <button class="btn btn-primary" data-ng-click="startProcess(workflowProcess)" translate="START_PROCESS">Start Process</button>
+                </div>
+                <div data-ng-show="workflowProcess.processInstances.length > 0">
+                    Executing Step: {{workflowProcess.processInstances[0].executions[0].currentStage}}
+                </div>
+                <div>
+                    <img data-ng-if="workflowProcess.isOpen" src="{{getImageUrl(workflowProcess)}}"/>
+                </div>
+            </accordion-group>
+        </accordion>
+    </div>
+</div> <!-- /container -->
+

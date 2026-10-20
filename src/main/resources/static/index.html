@@ -1,0 +1,93 @@
+<!--
+
+    Copyright (c) 2014 - 2015 Ventiv Technology
+
+    Licensed under the Apache License, Version 2.0 (the "License"); you may not
+    use this file except in compliance with the License. You may obtain a copy of
+    the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+    License for the specific language governing permissions and limitations under
+    the License.
+
+-->
+<!DOCTYPE html>
+<!--[if lt IE 7]>      <html lang="en" ng-app="myApp" class="no-js lt-ie9 lt-ie8 lt-ie7"> <![endif]-->
+<!--[if IE 7]>         <html lang="en" ng-app="myApp" class="no-js lt-ie9 lt-ie8"> <![endif]-->
+<!--[if IE 8]>         <html lang="en" ng-app="myApp" class="no-js lt-ie9"> <![endif]-->
+<!--[if gt IE 8]><!--> <html lang="en" ng-app="myApp" class="no-js"> <!--<![endif]-->
+<head lang="en">
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title translate="DOCKER_MANAGER">Docker Manager</title>
+    <meta name="description" content="">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="/webjars/bootstrap/3.1.1/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/webjars/angular-busy/4.1.1/angular-busy.min.css">
+    <link rel="stylesheet" href="/webjars/select2/4.0.0-rc.2/dist/css/select2.min.css"/>
+    <link rel="stylesheet" href="/webjars/angular-chart.js/0.5.3/angular-chart.css"/>
+    <link rel="stylesheet" href="/webjars/c3/0.4.9/c3.css"/>
+    <link rel="stylesheet" href="/app/js/vendor/angular-dashboard-framework/0.7.0/angular-dashboard-framework.min.css"/>
+    <link rel="stylesheet" href="/app/css/app.css">
+
+    <!-- Kick off RequireJS -->
+    <script data-main="scripts/config" data-app="main" data-base-url="/app/js" src="/webjars/requirejs/2.1.14-3/require.min.js"></script>
+</head>
+<body ng-controller="MainController" data-ng-cloak>
+<!-- Fixed navbar -->
+<div class="navbar navbar-default navbar-fixed-top" role="navigation">
+    <div class="container-fluid">
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target=".navbar-collapse">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="/" translate="DOCKER_MANAGER">Docker Manager</a>
+        </div>
+        <div class="navbar-collapse collapse">
+            <ul class="nav navbar-nav">
+                <!-- Tier Dropdowns (If Multiple tiers) -->
+                <li class="dropdown" data-ng-class="getTierClass(tierName)" data-ng-show="isMultipleTiers()" data-ng-repeat="(tierName, environmentList) in tiers">
+                    <a href="#" class="dropdown-toggle" role="button" aria-expanded="false"><span translate="TIER">Tier</span>: {{tierName}} <span class="caret"></span></a>
+                    <ul class="dropdown-menu" role="menu">
+                        <li ui-sref-active="active" data-ng-repeat="environment in environmentList"><a href ui-sref="environment({ tierName: tierName, environmentId: environment.id})">{{environment.description}}</a></li>
+                    </ul>
+                </li>
+                <!-- /Tier Dropdowns -->
+
+                <!-- Environments (If One Environment) -->
+                <li ui-sref-active="active" data-ng-show="!isMultipleTiers()" data-ng-repeat="environment in environments"><a href ui-sref="environment({tierName: environment.tierName, environmentId: environment.id})">{{environment.description}}</a></li>
+            </ul>
+            <ul class="nav navbar-nav navbar-right">
+                <li class="dropdown">
+                    <a href="#" class="dropdown-toggle" role="button" aria-expanded="false"><span>User: {{userDetails.name}}</span><span class="caret"></span></a>
+                    <ul class="dropdown-menu" role="menu">
+                        <li><a href="/logout">Logout</a></li>
+                        <li><a data-ng-click="generateJwtToken()">Generate JWT Token</a></li>
+                        <li><a data-ng-click="refreshDockerState()">Refresh Docker State</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </div><!--/.nav-collapse -->
+    </div>
+</div>
+
+<!-- Body Of Page -->
+<div class="container-fluid" cg-busy="asyncExecutionPromise">
+    <div class="row">
+
+
+        <!-- Details -->
+        <div class="col-md-12 main" ui-view></div>
+    </div>
+</div>
+</body>
+</html>

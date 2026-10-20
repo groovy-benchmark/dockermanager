@@ -1,0 +1,32 @@
+<!--
+
+    Copyright (c) 2014 - 2015 Ventiv Technology
+
+    Licensed under the Apache License, Version 2.0 (the "License"); you may not
+    use this file except in compliance with the License. You may obtain a copy of
+    the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+    License for the specific language governing permissions and limitations under
+    the License.
+
+-->
+<div class="row">
+    <div class="col-md-2"><span translate="HISTORY_LAST">History Last</span><span>{{auditHistory.page.size}}:</span></div>
+    <div class="col-md-1" translate="LOGIN"><b>Login</b></div>
+    <div class="col-md-2" translate="ACTION_PERMISSION"><b>Action Permission</b></div>
+    <div class="col-md-3" translate="TIMESTAMP"><b>Timestamp</b></div>
+    <div class="col-md-3" translate="AUDIT_DETAILS"><b>Audit Details</b></div>
+</div>
+
+<div class="row" data-ng-repeat="userAudit in auditHistory._embedded.userAudits">
+    <div class="col-md-2">&nbsp;</div>
+    <div class="col-md-1">{{userAudit.principal}}</div>
+    <div class="col-md-2">{{userAudit.permission}}</div>
+    <div class="col-md-3">{{userAudit.permissionEvaluated | date:'medium'}}</div>
+    <div class="col-md-3">{{userAudit.auditDetails | json}}</div>
+</div>

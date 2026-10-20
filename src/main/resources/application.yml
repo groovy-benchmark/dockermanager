@@ -1,0 +1,44 @@
+auth.bypass: false
+auth.type: AllowAnyone
+auth.realm: Docker Manager (Allow Anyone)
+
+logging:
+  .level:
+  root: DEBUG
+
+docker:
+  client:
+    localhost:
+      certPath: ~//.docker/machine/machines/default/
+
+spring.thymeleaf.mode: LEGACYHTML5
+
+# Set the session timeout to 1 day
+server.session-timeout: 86400
+
+# Generate via: keytool -alias DockerManager -keyalg RSA -keypass changeit -keystore keystore.jks -storepass changeit -genkeypair
+keystore:
+  location: file:./config/keystore.jks
+  storepass: changeit
+  alias: DockerManager
+  keypassword: changeit
+
+plugins:
+  - org.ventiv.docker.manager.plugin.DynatracePlugin
+  - org.ventiv.docker.manager.plugin.JavaDebugPlugin
+  - org.ventiv.docker.manager.plugin.SlackNotificationPlugin
+  - org.ventiv.docker.manager.plugin.JavaActionsPlugin
+  - org.ventiv.docker.manager.plugin.OSActionsPlugin
+  - org.ventiv.docker.manager.plugin.ScriptCreationPlugin
+
+auth.permissionsToAudit: START, STOP, RESTART, DEPLOY, REMOVE
+
+webjars.requirejs.newModules:
+webjars.requirejs.paths.select2: dist/js/select2.min
+
+spring.jpa.hibernate.ddl-auto: update
+
+spring.activiti.processDefinitionLocationPrefix: file:./config/env-config/processes/
+
+# Since we do not use one single Rabbit Connection (it's configured by Jobs), disable health check
+management.health.rabbit.enabled: false

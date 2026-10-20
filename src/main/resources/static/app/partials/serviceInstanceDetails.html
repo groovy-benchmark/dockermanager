@@ -1,0 +1,103 @@
+<!--
+
+    Copyright (c) 2014 - 2015 Ventiv Technology
+
+    Licensed under the Apache License, Version 2.0 (the "License"); you may not
+    use this file except in compliance with the License. You may obtain a copy of
+    the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+    License for the specific language governing permissions and limitations under
+    the License.
+
+-->
+<div class="" id="service-instance-details" cg-busy="asyncExecutionPromise">
+    <div class="modal-header">
+        <h3 class="modal-title"><span translate="SERVICE_INSTANCE">Service Instance</span>: {{serviceInstance.serviceDescription}}</h3>
+    </div>
+    <div class="modal-body">
+        <div class="row">
+            <div class="col-md-2" translate="DEPLOYED_BUILD">Deployed Build:</div>
+            <div class="col-md-10">{{serviceInstance.containerImage.tag}}</div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-2" translate="STATUS">Status:</div>
+            <div class="col-md-10">{{serviceInstance.status}} - {{serviceInstance.containerStatus}}</div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-2" translate="DEPLOYED">Deployed:</div>
+            <div class="col-md-10">{{serviceInstance.containerCreatedDate | date:'fullDate'}} {{serviceInstance.containerCreatedDate | date:'mediumTime'}}</div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-2" translate="URL">Url:</div>
+            <div class="col-md-10"><a href="{{serviceInstance.url}}" target="_blank">{{serviceInstance.url}}</a></div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-2" translate="SERVER_NAME">Server Name:</div>
+            <div class="col-md-10">{{serviceInstance.serverName}}</div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-2" translate="INSTANCE_NUMBER">Instance Number:</div>
+            <div class="col-md-10">{{serviceInstance.instanceNumber}}</div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-2" translate="CONTAINER_ID">Container Id:</div>
+            <div class="col-md-10">{{serviceInstance.containerId}}</div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-2" translate="CONTAINER_IMAGE">Container Image:</div>
+            <div class="col-md-10">{{serviceInstance.containerImage.registry}}<span data-ng-if="serviceInstance.containerImage.namespace != 'library'">/{{serviceInstance.containerImage.namespace}}</span>/{{serviceInstance.containerImage.repository}}:{{serviceInstance.containerImage.tag}}</div>
+        </div>
+
+        <hr>
+
+        <div class="row">
+            <div class="col-md-2" translate="PORTS">Ports:</div>
+            <div class="col-md-2" translate="PORT_TYPE"><b>Port Type</b></div>
+            <div class="col-md-8" translate="PORT_MAPPING"><b>Port Mapping</b></div>
+        </div>
+
+        <div class="row" data-ng-repeat="portDefinition in serviceInstance.portDefinitions">
+            <div class="col-md-2">&nbsp;</div>
+            <div class="col-md-2">{{portDefinition.portType}}</div>
+            <div class="col-md-8">{{portDefinition.hostPort}} -> {{portDefinition.containerPort}}</div>
+        </div>
+
+        <hr data-ng-show="isServiceInstancePermissionGranted('READ_USER_AUDIT')">
+
+        <div data-ng-include="'/app/partials/userAuditDetails.html'" data-ng-show="isServiceInstancePermissionGranted('READ_USER_AUDIT')"></div>
+    </div>
+
+    <div class="modal-footer">
+        <div class="col-md-2 btn-group" data-ng-show="actions.length > 0">
+            <button class="btn btn-primary" translate="ACTIONS">Actions</button>
+            <button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                <span class="caret"></span>
+                <span class="sr-only">Toggle Dropdown</span>
+            </button>
+            <ul class="dropdown-menu">
+                <li><a data-ng-repeat="action in actions" data-ng-click="executeDockerAction(action)">{{action.description}}</a></li>
+            </ul>
+        </div>
+        <button class="btn btn-danger" data-ng-show="isServiceInstancePermissionGranted('REMOVE')" ng-click="postContainerOperation('remove')" translate="Remove">Remove</button>
+        <button class="btn btn-warning" data-ng-click="postContainerOperation('stop')" translate="STOP" data-ng-show="isServiceInstancePermissionGranted('STOP') && serviceInstance.status == 'Running'">Stop</button>
+        <button class="btn btn-warning" data-ng-click="postContainerOperation('start')" translate="START" data-ng-show="isServiceInstancePermissionGranted('START') && serviceInstance.status == 'Stopped'">Start</button>
+        <button class="btn btn-warning" data-ng-click="postContainerOperation('restart')" translate="RESTART" data-ng-show="isServiceInstancePermissionGranted('RESTART') && serviceInstance.status == 'Running'">Restart</button>
+        <button class="btn btn-primary" data-ng-show="isServiceInstancePermissionGranted('LOGS') && (serviceInstance.loggingType === 'json-file' || serviceInstance.loggingType === 'journald')" ng-click="getStdOut()" translate="STD_OUT">Std Out</button>
+        <button class="btn btn-primary" data-ng-show="isServiceInstancePermissionGranted('LOGS') && (serviceInstance.loggingType === 'json-file' || serviceInstance.loggingType === 'journald')" ng-click="getStdErr()" translate="STD_ERR">Std Err</button>
+        <button class="btn btn-primary" data-ng-show="isServiceInstancePermissionGranted('LOGS') && serviceInstance.loggingType === 'splunk'" ng-click="openSplunk(serviceInstance)" translate="OPEN_SPLUNK">Open Splunk For Logs</button>
+        <button class="btn btn-info" data-ng-click="cancel()" translate="CANCEL">Cancel</button>
+    </div>
+
+</div>

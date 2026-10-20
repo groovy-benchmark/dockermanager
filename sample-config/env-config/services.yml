@@ -1,0 +1,90 @@
+services:
+  - name: activiti                                                                              # Name / ID of this service
+    description: Activiti                                                                       # Descritpion for UI
+    image: example.registry.com/activiti                                                        # Docker Tag for the Image
+    url: http://${server}:${port.http}/activiti-explorer                                        # (Optional) URL for a running service
+    build:                                                                                      # (Optional) Info to build Docker Image
+      versionSelection:                                                                         # If this Build can only use certain versions
+        uri: https://api.github.com/repos/Activiti/Activiti/releases                            # URI to fetch version info
+        jsonPath: $[*].tag_name                                                                 # JSON Path to extract version info from URI Above
+      stages:                                                                                   # 1-to-Many stages to actually build the image
+        - type: DockerBuild                                                                     # Type of build (DockerBuild, JenkinsBuild, etc)
+          settings:
+            buildHostName: boot2docker                                                          # (Optional) Docker Host to build on. Defaults to 'boot2docker' from configuration
+            buildDirectory: ./sample-config/dockerfiles/activiti                                # Where the Dockerfile exists on the filesystem
+            skipPush: true                                                                      # Should we push the built image to the repository. Defaults to 'false'. Helpful only if build / running machine are the same
+    containerPorts:                                                                             # Ports that this container exposes
+      - type: http                                                                              # Port Type (any AlphaNumeric string). Used for pairing when Service Instance is created
+        port: 8080                                                                              # Internal Container port number
+
+  - name: mysql
+    description: MySQL Database
+    image: mysql:5                                                                              # Note: This image is tagged with a specific version. It will not be part of the version selection dropdown
+    containerPorts:
+      - type: mysql
+        port: 3306
+    containerVolumes:                                                                           # Any volumes that this container exposes
+      - type: data                                                                              # Volume name (any AlphaNumeric string).  Used for pairing when Service Instance is created
+        path: /var/lib/mysql                                                                    # Path that is exposed within the container
+    environment:                                                                                # Environment variables for use in EVERY Service Instance.  NOTE: Will still resolve variables at container creation time
+      MYSQL_ROOT_PASSWORD: supers3cr3tpassword
+
+  - name: rabbit
+    description: RabbitMQ
+    image: rabbitmq:3.4.4-management
+    containerPorts:                                                                             # Example with multiple ports
+      - type: http
+        port: 15672
+      - type: amqp
+        port: 5672
+    additionalMetrics:                                                                          # Additional Metrics for this service
+      - type: RestCall                                                                          # Type of additional metrics RestCall, JmxMetrics, etc...
+        name: overview                                                                          # Name this additional metric
+        ui:                                                                                     # UI Configuration: Button + Details.  Each can have a template (HTML inline here) or partial (HTML served from filessytem)
+          buttonTemplate: <span>{{metricValue.queue_totals.messages}} Message(s) Queued</span>  # Template for the button in the UI
+          detailsPartial: ./sample-config/partials/rabbit/overview.html                         # Template on filesystem for the Details in the UI
+        settings:                                                                               # Settings to feed into the Additional Metrics Module
+          url: http://#{server}:#{port.http}/api/overview
+          authentication: ProvidedUserPassword
+          user: guest
+          password: guest
+        storage:                                                                                # Long term storage configuration.  Key to store in and SimpleTemplate expression to extract values from data object.  Must result in Number
+          messages.publish: "#{data.message_stats.publish}"
+          messages.publish.rate: "#{data.message_stats.publish_details.rate}"
+          messages.ack: "#{data.message_stats.ack}"
+          messages.ack.rate: "#{data.message_stats.ack_details.rate}"
+          messages.deliver.get: "#{data.message_stats.deliver_get}"
+          messages.deliver.get.rate: "#{data.message_stats.deliver_get_details.rate}"
+          messages.deliver: "#{data.message_stats.deliver}"
+          messages.deliver.rate: "#{data.message_stats.deliver_details.rate}"
+        storageDescriptions:                                                                    # Long term storage key descriptions for the UI
+          messages.publish: Messages Published
+          messages.publish.rate: Messages Published Rate
+          messages.ack: Messages Acknowledged
+          messages.ack.rate: Messages Acknowledged Rate
+          messages.deliver.get: Messages Delivered (Get)
+          messages.deliver.get.rate: Messages Delivered (Get) Rate
+          messages.deliver: Messages Delivered
+          messages.deliver.rate: Messages Delivered Rate
+    environment:
+      RABBITMQ_NODENAME: rabbit1
+
+  - name: couch
+    description: Couch DB
+    image: tutum/couchdb:latest
+    url: http://${server}:${port.http}/_utils/
+    containerPorts:
+      - type: http
+        port: 5984
+    environment:
+      COUCHDB_PASS: admin
+
+  - name: docker_manager
+    description: Docker Manager
+    image: ventivtech/docker_manager
+    url: http://${server}:${port.http}/
+    containerPorts:
+      - type: http
+        port: 8080
+    environment:
+      CONFIG_LOCATION: file:./sample-config/env-config
