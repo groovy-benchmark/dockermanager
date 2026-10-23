@@ -76,7 +76,7 @@ class JpaAdditionalMetricsStore extends AbstractAdditionalMetricsStore {
                 WHERE APPLICATION.TIER_NAME = :tierName
             """;
             List<String> namesInTier = new NamedParameterJdbcTemplate(jdbcTemplate).queryForList(tierSql, [tierName: criteria.get("tierName")], String.class);   // SAFE_SINK: PLANTED-GR-HR-9-safe
-            names = names.findAll { namesInTier.contains(it) };
+            names = (List<String>) names.findAll { namesInTier.contains(it) };
         }
 
         return names;
